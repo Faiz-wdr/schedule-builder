@@ -4,7 +4,7 @@ import { timeToMinutes, detectConflict, minutesToTime } from '../utils/timeUtils
 import { ImportSummaryModal } from './ImportSummaryModal';
 import * as XLSX from 'xlsx';
 import { 
-  Search, Filter, ArrowUpDown, FileDown, 
+  Search, Filter, FileDown, 
   Upload, Trash2, Edit2, Copy, AlertCircle
 } from 'lucide-react';
 
@@ -14,7 +14,7 @@ interface SchedulePreviewProps {
   onDuplicate: (item: ScheduleItem) => void;
   onDelete: (id: string) => void;
   onImportSchedules: (items: Omit<ScheduleItem, 'id'>[], overwriteConflicts?: boolean) => void;
-  onOpenExportModal: () => void;
+  onOpenExportModal: (activeOrder: 'time' | 'stage' | 'category') => void;
 }
 
 const getCategoryStyle = (category: string) => {
@@ -53,8 +53,8 @@ export const SchedulePreview: React.FC<SchedulePreviewProps> = ({
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [stageFilter, setStageFilter] = useState('All');
 
-  // Sorting
-  const [sortBy, setSortBy] = useState<'day' | 'time'>('day');
+  // Sorting Layout
+  const [sortBy, setSortBy] = useState<'time' | 'stage' | 'category'>('time');
 
   // Interactive Excel Import States
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
@@ -272,12 +272,26 @@ export const SchedulePreview: React.FC<SchedulePreviewProps> = ({
       const timeA = timeToMinutes(a.startingTime);
       const timeB = timeToMinutes(b.startingTime);
 
-      if (sortBy === 'day') {
+      if (sortBy === 'time') {
         if (dayA !== dayB) return dayA - dayB;
-        return timeA - timeB; // secondary sort by time
+        return timeA - timeB;
+      } else if (sortBy === 'stage') {
+        const stageA = parseInt(a.stage) || 0;
+        const stageB = parseInt(b.stage) || 0;
+        if (stageA !== stageB) return stageA - stageB;
+        if (dayA !== dayB) return dayA - dayB;
+        return timeA - timeB;
       } else {
-        if (timeA !== timeB) return timeA - timeB;
-        return dayA - dayB; // secondary sort by day
+        const catOrder = ['lower primary', 'upper primary', 'high school', 'junior', 'higher secondary', 'senior', 'campus'];
+        const idxA = catOrder.indexOf(a.category.toLowerCase().trim());
+        const idxB = catOrder.indexOf(b.category.toLowerCase().trim());
+        
+        const priorityA = idxA !== -1 ? idxA : 999;
+        const priorityB = idxB !== -1 ? idxB : 999;
+        
+        if (priorityA !== priorityB) return priorityA - priorityB;
+        if (dayA !== dayB) return dayA - dayB;
+        return timeA - timeB;
       }
     });
 
@@ -347,16 +361,18 @@ export const SchedulePreview: React.FC<SchedulePreviewProps> = ({
             </select>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid #3C3C3C', paddingLeft: '8px' }}>
-            <button
-              onClick={() => setSortBy(sortBy === 'day' ? 'time' : 'day')}
-              className="btn btn-secondary"
-              style={{ gap: '4px', height: '28px', padding: '0 8px', fontSize: '11px', color: '#B3B3B3' }}
-              title="Toggle primary sort order"
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', borderLeft: '1px solid #3C3C3C', paddingLeft: '8px' }}>
+            <span style={{ fontSize: '10px', color: '#B3B3B3', fontWeight: 600 }}>ORDER:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="filter-select"
+              style={{ minWidth: '110px', height: '28px', fontSize: '11px', backgroundColor: 'var(--surface-color)', color: '#FFF' }}
             >
-              <ArrowUpDown size={12} />
-              Sort: {sortBy === 'day' ? 'Day → Time' : 'Time → Day'}
-            </button>
+              <option value="time">Time Based</option>
+              <option value="stage">Stage Wise</option>
+              <option value="category">Category Wise</option>
+            </select>
           </div>
         </div>
 
@@ -380,7 +396,7 @@ export const SchedulePreview: React.FC<SchedulePreviewProps> = ({
           </button>
 
           <button
-            onClick={onOpenExportModal}
+            onClick={() => onOpenExportModal(sortBy)}
             className="btn btn-primary"
             style={{ height: '28px', padding: '0 10px' }}
             disabled={schedules.length === 0}

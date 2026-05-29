@@ -8,6 +8,7 @@ interface PrintLayoutProps {
   venue: string;
   date: string;
   dayNumber: string;
+  order: 'time' | 'stage' | 'category';
 }
 
 export const PrintLayout: React.FC<PrintLayoutProps> = ({
@@ -16,13 +17,141 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
   venue,
   date,
   dayNumber,
+  order,
 }) => {
-  // Sort schedules by starting time for a professional chronological print layout
-  const sortedSchedules = [...schedules].sort((a, b) => {
-    const minA = timeToMinutes(a.startingTime);
-    const minB = timeToMinutes(b.startingTime);
-    return minA - minB;
-  });
+  
+  // Generic helper to render a sub-table of sorted items
+  const renderSubTable = (items: ScheduleItem[]) => {
+    const sorted = [...items].sort((a, b) => {
+      // Primary sort by Day (e.g. Day 1, Day 2...)
+      const dayA = parseInt(a.day.replace(/\D/g, '')) || 0;
+      const dayB = parseInt(b.day.replace(/\D/g, '')) || 0;
+      if (dayA !== dayB) return dayA - dayB;
+
+      // Secondary sort by Starting Time
+      const timeA = timeToMinutes(a.startingTime);
+      const timeB = timeToMinutes(b.startingTime);
+      return timeA - timeB;
+    });
+
+    return (
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: '11px',
+          lineHeight: '1.5',
+          color: '#000000',
+          marginBottom: '20px',
+        }}
+      >
+        <thead>
+          <tr style={{ borderBottom: '1.5px solid #000000', textAlign: 'left', fontWeight: 'bold' }}>
+            <th style={{ padding: '6px 4px', width: '50px' }}>Day</th>
+            <th style={{ padding: '6px 4px', width: '130px' }}>Time</th>
+            <th style={{ padding: '6px 4px', width: '220px' }}>Program</th>
+            <th style={{ padding: '6px 4px', width: '160px' }}>Category</th>
+            <th style={{ padding: '6px 4px', width: '80px' }}>Stage</th>
+            <th style={{ padding: '6px 4px', width: '70px' }}>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((item) => {
+            const startMins = timeToMinutes(item.startingTime);
+            const endMins = startMins + item.duration;
+            const endTimeStr = minutesToTime(endMins);
+
+            return (
+              <tr
+                key={item.id}
+                style={{
+                  borderBottom: '1px solid #E0E0E0',
+                }}
+              >
+                <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>
+                  {item.day}
+                </td>
+                <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>
+                  {item.startingTime} - {endTimeStr}
+                </td>
+                <td style={{ padding: '6px 4px', fontWeight: 600 }}>
+                  {item.programName}
+                </td>
+                <td style={{ padding: '6px 4px' }}>
+                  {item.category}
+                </td>
+                <td style={{ padding: '6px 4px', fontWeight: 500 }}>
+                  {item.stage}
+                </td>
+                <td style={{ padding: '6px 4px' }}>
+                  {item.duration} mins
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  };
+
+  // Grouping render logic
+  const renderGroupedContent = () => {
+    if (schedules.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '40px', fontSize: '14px', border: '1px dashed #E0E0E0' }}>
+          No schedules added yet.
+        </div>
+      );
+    }
+
+    if (order === 'stage') {
+      // Extract unique stages present, sorted numeric ascending
+      const stages = Array.from(new Set(schedules.map(s => s.stage))).sort((a, b) => 
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+      );
+
+      return stages.map(stage => {
+        const stageItems = schedules.filter(s => s.stage === stage);
+        return (
+          <div key={stage} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#000000', marginBottom: '8px', borderBottom: '1.5px solid #000000', paddingBottom: '3px', textTransform: 'uppercase' }}>
+              Stage {stage}
+            </h3>
+            {renderSubTable(stageItems)}
+          </div>
+        );
+      });
+    }
+
+    if (order === 'category') {
+      // Custom category sort order index sequence
+      const catOrder = ['lower primary', 'upper primary', 'high school', 'junior', 'higher secondary', 'senior', 'campus'];
+      
+      const categories = Array.from(new Set(schedules.map(s => s.category))).sort((a, b) => {
+        const idxA = catOrder.indexOf(a.toLowerCase().trim());
+        const idxB = catOrder.indexOf(b.toLowerCase().trim());
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
+      });
+
+      return categories.map(category => {
+        const categoryItems = schedules.filter(s => s.category === category);
+        return (
+          <div key={category} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#000000', marginBottom: '8px', borderBottom: '1.5px solid #000000', paddingBottom: '3px', textTransform: 'uppercase' }}>
+              Category: {category}
+            </h3>
+            {renderSubTable(categoryItems)}
+          </div>
+        );
+      });
+    }
+
+    // Default chronological Time-based rendering
+    return renderSubTable(schedules);
+  };
 
   return (
     <div
@@ -63,66 +192,10 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
         </div>
       </div>
 
-      {/* Schedule Table */}
-      {sortedSchedules.length > 0 ? (
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: '11px',
-            lineHeight: '1.5',
-            color: '#000000',
-          }}
-        >
-          <thead>
-            <tr style={{ borderBottom: '2px solid #000000', textAlign: 'left', fontWeight: 'bold' }}>
-              <th style={{ padding: '8px 6px', width: '130px' }}>Time</th>
-              <th style={{ padding: '8px 6px', width: '220px' }}>Program</th>
-              <th style={{ padding: '8px 6px', width: '160px' }}>Category</th>
-              <th style={{ padding: '8px 6px', width: '120px' }}>Stage</th>
-              <th style={{ padding: '8px 6px', width: '90px' }}>Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedSchedules.map((item) => {
-              const startMins = timeToMinutes(item.startingTime);
-              const endMins = startMins + item.duration;
-              const endTimeStr = minutesToTime(endMins);
+      {/* Grouped / chronological Content rendering */}
+      {renderGroupedContent()}
 
-              return (
-                <tr
-                  key={item.id}
-                  style={{
-                    borderBottom: '1px solid #E0E0E0',
-                  }}
-                >
-                  <td style={{ padding: '8px 6px', fontWeight: 'bold' }}>
-                    {item.startingTime} - {endTimeStr}
-                  </td>
-                  <td style={{ padding: '8px 6px', fontWeight: 600 }}>
-                    {item.programName}
-                  </td>
-                  <td style={{ padding: '8px 6px' }}>
-                    {item.category}
-                  </td>
-                  <td style={{ padding: '8px 6px' }}>
-                    {item.stage}
-                  </td>
-                  <td style={{ padding: '8px 6px' }}>
-                    {item.duration} mins
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '40px', fontSize: '14px', border: '1px dashed #E0E0E0' }}>
-          No schedules added yet.
-        </div>
-      )}
-
-      {/* Footer stamp */}
+      {/* Footer stamp (Preserved Malayalam text tag) */}
       <div
         style={{
           marginTop: '40px',

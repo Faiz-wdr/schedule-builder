@@ -9,6 +9,7 @@ import { PrintLayout } from './components/PrintLayout';
 import { suggestAvailableSlots, timeToMinutes } from './utils/timeUtils';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 import { CalendarRange } from 'lucide-react';
 
 export default function App() {
@@ -67,6 +68,7 @@ export default function App() {
 
   // Export states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportOrder, setExportOrder] = useState<'time' | 'stage' | 'category'>('time');
   const [exportMetadata, setExportMetadata] = useState({
     eventName: 'ARTS FESTIVAL SCHEDULE',
     venue: 'MAIN ARENA',
@@ -287,14 +289,15 @@ export default function App() {
   };
 
   // Trigger export format modal
-  const handleOpenExportModal = () => {
+  const handleOpenExportModal = (activeOrder: 'time' | 'stage' | 'category') => {
     // Try to guess defaults based on filtered items or current state
     const days = Array.from(new Set(schedules.map(s => s.day)));
     const dayStr = days.length === 1 ? days[0] : 'ALL DAYS';
-    
+
     // Format date in a beautiful printable string e.g. "October 12, 2026"
     const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
+    setExportOrder(activeOrder);
     setExportMetadata({
       eventName: eventName,
       venue: venue.toUpperCase(),
@@ -304,8 +307,63 @@ export default function App() {
     setIsExportModalOpen(true);
   };
 
-  const handleExportExecute = (format: 'pdf' | 'jpg') => {
+  const handleExportExecute = (format: 'pdf' | 'jpg' | 'xlsx', order: 'time' | 'stage' | 'category') => {
+    setExportOrder(order);
     setIsExportModalOpen(false);
+
+    if (format === 'xlsx') {
+      // Export as MS Excel Spreadsheet (.xlsx)
+      setTimeout(() => {
+        const sorted = [...schedules].sort((a, b) => {
+          const dayA = parseInt(a.day.replace(/\D/g, '')) || 0;
+          const dayB = parseInt(b.day.replace(/\D/g, '')) || 0;
+          const timeA = timeToMinutes(a.startingTime);
+          const timeB = timeToMinutes(b.startingTime);
+
+          if (order === 'time') {
+            if (dayA !== dayB) return dayA - dayB;
+            return timeA - timeB;
+          } else if (order === 'stage') {
+            const stageA = parseInt(a.stage) || 0;
+            const stageB = parseInt(b.stage) || 0;
+            if (stageA !== stageB) return stageA - stageB;
+            if (dayA !== dayB) return dayA - dayB;
+            return timeA - timeB;
+          } else {
+            const catOrder = ['lower primary', 'upper primary', 'high school', 'junior', 'higher secondary', 'senior', 'campus'];
+            const idxA = catOrder.indexOf(a.category.toLowerCase().trim());
+            const idxB = catOrder.indexOf(b.category.toLowerCase().trim());
+
+            const priorityA = idxA !== -1 ? idxA : 999;
+            const priorityB = idxB !== -1 ? idxB : 999;
+
+            if (priorityA !== priorityB) return priorityA - priorityB;
+            if (dayA !== dayB) return dayA - dayB;
+            return timeA - timeB;
+          }
+        });
+
+        // Map into human readable tabular rows
+        const rows = sorted.map(s => ({
+          'Day': s.day,
+          'Category': s.category,
+          'Program Name': s.programName,
+          'Reporting Time': s.reportingTime,
+          'Starting Time': s.startingTime,
+          'Duration (Minutes)': s.duration,
+          'Stage': s.stage,
+          'Remarks': s.remarks || ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Festival Schedule');
+
+        const cleanName = eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        XLSX.writeFile(workbook, `${cleanName}_schedule.xlsx`);
+      }, 50);
+      return;
+    }
 
     // Give time for layout to synchronize before render
     setTimeout(() => {
@@ -321,7 +379,7 @@ export default function App() {
         useCORS: true,
         backgroundColor: '#FFFFFF',
       }).then((canvas) => {
-        const cleanName = exportMetadata.eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const cleanName = eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
         if (format === 'jpg') {
           // Export as JPG
@@ -364,7 +422,7 @@ export default function App() {
         console.error(err);
         alert('Error rendering schedule document.');
       });
-    }, 100);
+    }, 180);
   };
 
   return (
@@ -376,7 +434,7 @@ export default function App() {
       <header className="top-nav">
         <div className="top-nav-logo">
           <CalendarRange size={16} style={{ color: '#4D90FE' }} />
-          <span>Arts Program Schedule Builder</span>
+          <span>Schedule Builder</span>
         </div>
         <div className="top-nav-actions" style={{ fontSize: '11px', color: '#B3B3B3', display: 'flex', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -453,6 +511,7 @@ export default function App() {
         isOpen={isExportModalOpen}
         onExport={handleExportExecute}
         onClose={() => setIsExportModalOpen(false)}
+        defaultOrder={exportOrder}
       />
 
       {/* Off-screen Document print engine */}
@@ -462,6 +521,7 @@ export default function App() {
         venue={venue.toUpperCase()}
         date={date ? new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
         dayNumber={exportMetadata.dayNumber}
+        order={exportOrder}
       />
     </div>
   );
