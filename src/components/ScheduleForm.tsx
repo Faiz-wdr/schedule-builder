@@ -12,11 +12,11 @@ interface ScheduleFormProps {
   startingTimeOverride?: string | null;
   onResetOverride?: () => void;
   eventName: string;
-  onChangeEventName: (val: string) => void;
   venue: string;
-  onChangeVenue: (val: string) => void;
   date: string;
-  onChangeDate: (val: string) => void;
+  categories: string[];
+  stages: string[];
+  onUpdateSettings: (name: string, venue: string, date: string, categories: string[], stages: string[]) => void;
   onResetData: () => void;
 }
 
@@ -29,23 +29,70 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
   startingTimeOverride,
   onResetOverride,
   eventName,
-  onChangeEventName,
   venue,
-  onChangeVenue,
   date,
-  onChangeDate,
+  categories,
+  stages,
+  onUpdateSettings,
   onResetData,
 }) => {
+  // Local Settings States (for "Update Settings" buffering)
+  const [localEventName, setLocalEventName] = useState(eventName);
+  const [localVenue, setLocalVenue] = useState(venue);
+  const [localDate, setLocalDate] = useState(date);
+  const [localCategories, setLocalCategories] = useState(() => categories.join(', '));
+  const [localStages, setLocalStages] = useState(() => stages.join(', '));
+
   // Base states
   const [day, setDay] = useState('Day 1');
-  const [category, setCategory] = useState('Lower Primary');
+  const [category, setCategory] = useState(() => categories[0] || 'Lower Primary');
   const [programName, setProgramName] = useState('');
   const [reportingTime, setReportingTime] = useState('08:30');
   const [startingTime, setStartingTime] = useState('09:00');
   const [duration, setDuration] = useState<number>(30);
-  const [stage, setStage] = useState('1');
+  const [stage, setStage] = useState(() => stages[0] || 'Stage 1');
   const [remarks, setRemarks] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Sync settings when props change from App (e.g. on load or reset)
+  useEffect(() => {
+    setLocalEventName(eventName);
+    setLocalVenue(venue);
+    setLocalDate(date);
+    setLocalCategories(categories.join(', '));
+    setLocalStages(stages.join(', '));
+  }, [eventName, venue, date, categories, stages]);
+
+  // Adjust active selected category/stage if they are removed from options list
+  useEffect(() => {
+    if (categories.length > 0 && !categories.includes(category)) {
+      setCategory(categories[0]);
+    }
+  }, [categories, category]);
+
+  useEffect(() => {
+    if (stages.length > 0 && !stages.includes(stage)) {
+      setStage(stages[0]);
+    }
+  }, [stages, stage]);
+
+  const handleUpdateSettingsClick = () => {
+    const parsedCats = localCategories
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+    const parsedStages = localStages
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (!localEventName.trim() || !localVenue.trim() || parsedCats.length === 0 || parsedStages.length === 0) {
+      alert('Event Name, Venue, Categories list, and Stages list cannot be empty.');
+      return;
+    }
+
+    onUpdateSettings(localEventName.trim(), localVenue.trim(), localDate, parsedCats, parsedStages);
+  };
 
 
 
@@ -103,12 +150,12 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
   };
 
   const clearForm = () => {
-    setCategory('Lower Primary');
+    setCategory(categories[0] || 'Lower Primary');
     setProgramName('');
     setReportingTime('08:30');
     setStartingTime('09:00');
     setDuration(30);
-    setStage('1');
+    setStage(stages[0] || 'Stage 1');
     setRemarks('');
     onClearEdit();
   };
@@ -158,18 +205,18 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
   };
 
   return (
-    <div className="pane pane-left">
+    <div className="pane pane-left" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Event Settings Section */}
-      <div className="preview-toolbar" style={{ borderRight: 'none', borderBottom: '1px solid #3C3C3C' }}>
+      <div className="preview-toolbar" style={{ borderRight: 'none', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
         <h2 style={{ fontSize: '13px', fontWeight: 600 }}>Event Settings</h2>
       </div>
-      <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #3C3C3C', backgroundColor: 'rgba(0, 0, 0, 0.1)', flexShrink: 0 }}>
+      <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(0, 0, 0, 0.1)', flexShrink: 0 }}>
         <div className="form-group">
           <label className="form-label">Event Name</label>
           <input
             type="text"
-            value={eventName}
-            onChange={(e) => onChangeEventName(e.target.value)}
+            value={localEventName}
+            onChange={(e) => setLocalEventName(e.target.value)}
             placeholder="e.g. Annual Arts Festival 2026"
             className="form-input"
             style={{ height: '26px' }}
@@ -180,8 +227,8 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
             <label className="form-label">Venue</label>
             <input
               type="text"
-              value={venue}
-              onChange={(e) => onChangeVenue(e.target.value)}
+              value={localVenue}
+              onChange={(e) => setLocalVenue(e.target.value)}
               placeholder="e.g. Main Auditorium"
               className="form-input"
               style={{ height: '26px' }}
@@ -191,13 +238,43 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
             <label className="form-label">Date</label>
             <input
               type="date"
-              value={date}
-              onChange={(e) => onChangeDate(e.target.value)}
+              value={localDate}
+              onChange={(e) => setLocalDate(e.target.value)}
               className="form-input"
               style={{ height: '26px' }}
             />
           </div>
         </div>
+        <div className="form-group">
+          <label className="form-label">Categories (Comma separated)</label>
+          <input
+            type="text"
+            value={localCategories}
+            onChange={(e) => setLocalCategories(e.target.value)}
+            placeholder="Lower Primary, Upper Primary, Senior..."
+            className="form-input"
+            style={{ height: '26px' }}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Stages (Comma separated)</label>
+          <input
+            type="text"
+            value={localStages}
+            onChange={(e) => setLocalStages(e.target.value)}
+            placeholder="Stage 1, Stage 2, Stage 3..."
+            className="form-input"
+            style={{ height: '26px' }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleUpdateSettingsClick}
+          className="btn btn-primary animate-none"
+          style={{ height: '28px', marginTop: '2px', fontSize: '11px', fontWeight: 600, width: '100%', backgroundColor: '#22C55E', borderColor: '#22C55E', color: '#000' }}
+        >
+          Update Settings
+        </button>
       </div>
 
       <div className="preview-toolbar" style={{ borderRight: 'none' }}>
@@ -236,13 +313,11 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
             className="form-select"
             required
           >
-            <option value="Lower Primary">Lower Primary</option>
-            <option value="Upper Primary">Upper Primary</option>
-            <option value="High School">High School</option>
-            <option value="Junior">Junior</option>
-            <option value="Higher Secondary">Higher Secondary</option>
-            <option value="Senior">Senior</option>
-            <option value="Campus">Campus</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -301,11 +376,11 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
               className="form-select"
               required
             >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
+              {stages.map((stg) => (
+                <option key={stg} value={stg}>
+                  {stg}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -314,7 +389,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
           <button
             type="button"
             className="btn btn-secondary"
-            style={{ width: '100%', borderStyle: 'dashed', color: '#4D90FE', borderColor: '#4D90FE', gap: '8px', height: '30px' }}
+            style={{ width: '100%', borderStyle: 'dashed', color: '#22C55E', borderColor: '#22C55E', gap: '8px', height: '30px' }}
             onClick={handleSuggestClick}
           >
             <Sparkles size={13} />

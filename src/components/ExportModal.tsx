@@ -30,7 +30,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     <div className="modal-overlay">
       <div className="modal-content" style={{ width: '440px' }}>
         <div className="modal-header">
-          <div className="top-nav-logo" style={{ color: '#4D90FE', gap: '8px' }}>
+          <div className="top-nav-logo" style={{ color: '#22C55E', gap: '8px' }}>
             <FileDown size={16} />
             <span style={{ fontSize: '14px', fontWeight: 600, color: '#FFF', background: 'none', WebkitTextFillColor: 'initial' }}>
               Export Festival Schedule
@@ -56,8 +56,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   gap: '12px',
                   padding: '10px 12px',
                   borderRadius: '6px',
-                  border: `1px solid ${format === 'pdf' ? '#4D90FE' : '#3C3C3C'}`,
-                  backgroundColor: format === 'pdf' ? 'rgba(77, 144, 254, 0.08)' : '#252526',
+                  border: `1px solid ${format === 'pdf' ? '#22C55E' : '#27272A'}`,
+                  backgroundColor: format === 'pdf' ? 'rgba(34, 197, 94, 0.08)' : '#121212',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease-in-out',
                 }}
@@ -67,9 +67,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   name="export-format"
                   checked={format === 'pdf'}
                   onChange={() => setFormat('pdf')}
-                  style={{ cursor: 'pointer', accentColor: '#4D90FE' }}
+                  style={{ cursor: 'pointer', accentColor: '#22C55E' }}
                 />
-                <FileText size={18} style={{ color: format === 'pdf' ? '#4D90FE' : '#B3B3B3' }} />
+                <FileText size={18} style={{ color: format === 'pdf' ? '#22C55E' : '#B3B3B3' }} />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 600, display: 'block', fontSize: '12px' }}>PDF Document (.pdf)</span>
                   <span style={{ fontSize: '10px', color: '#B3B3B3' }}>Printable document layout (black text on white page)</span>
@@ -84,8 +84,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   gap: '12px',
                   padding: '10px 12px',
                   borderRadius: '6px',
-                  border: `1px solid ${format === 'jpg' ? '#4D90FE' : '#3C3C3C'}`,
-                  backgroundColor: format === 'jpg' ? 'rgba(77, 144, 254, 0.08)' : '#252526',
+                  border: `1px solid ${format === 'jpg' ? '#22C55E' : '#27272A'}`,
+                  backgroundColor: format === 'jpg' ? 'rgba(34, 197, 94, 0.08)' : '#121212',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease-in-out',
                 }}
@@ -95,9 +95,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   name="export-format"
                   checked={format === 'jpg'}
                   onChange={() => setFormat('jpg')}
-                  style={{ cursor: 'pointer', accentColor: '#4D90FE' }}
+                  style={{ cursor: 'pointer', accentColor: '#22C55E' }}
                 />
-                <Image size={18} style={{ color: format === 'jpg' ? '#4D90FE' : '#B3B3B3' }} />
+                <Image size={18} style={{ color: format === 'jpg' ? '#22C55E' : '#B3B3B3' }} />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 600, display: 'block', fontSize: '12px' }}>JPG Image (.jpg)</span>
                   <span style={{ fontSize: '10px', color: '#B3B3B3' }}>High-fidelity screenshot for WhatsApp & notice boards</span>
@@ -112,8 +112,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   gap: '12px',
                   padding: '10px 12px',
                   borderRadius: '6px',
-                  border: `1px solid ${format === 'xlsx' ? '#4D90FE' : '#3C3C3C'}`,
-                  backgroundColor: format === 'xlsx' ? 'rgba(77, 144, 254, 0.08)' : '#252526',
+                  border: `1px solid ${format === 'xlsx' ? '#22C55E' : '#27272A'}`,
+                  backgroundColor: format === 'xlsx' ? 'rgba(34, 197, 94, 0.08)' : '#121212',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease-in-out',
                 }}
@@ -123,9 +123,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   name="export-format"
                   checked={format === 'xlsx'}
                   onChange={() => setFormat('xlsx')}
-                  style={{ cursor: 'pointer', accentColor: '#4D90FE' }}
+                  style={{ cursor: 'pointer', accentColor: '#22C55E' }}
                 />
-                <FileSpreadsheet size={18} style={{ color: format === 'xlsx' ? '#4D90FE' : '#B3B3B3' }} />
+                <FileSpreadsheet size={18} style={{ color: format === 'xlsx' ? '#22C55E' : '#B3B3B3' }} />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 600, display: 'block', fontSize: '12px' }}>Excel Spreadsheet (.xlsx)</span>
                   <span style={{ fontSize: '10px', color: '#B3B3B3' }}>Raw spreadsheet columns to open in MS Excel/Sheets</span>

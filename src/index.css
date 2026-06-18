@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-color: #1E1E1E;
-  --surface-color: #252526;
-  --surface-hover: #2D2D30;
-  --border-color: #3C3C3C;
-  --text-primary: #FFFFFF;
-  --text-secondary: #B3B3B3;
-  --color-accent: #4D90FE;
+  --bg-color: #0A0A0A;
+  --surface-color: #121212;
+  --surface-hover: #1E1E1E;
+  --border-color: #27272A;
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --color-accent: #22C55E;
   --color-warning: #FFB020;
-  --color-danger: #FF5F56;
-  --color-success: #4CAF50;
+  --color-danger: #EF4444;
+  --color-success: #22C55E;
   
   --font-family: 'Inter', sans-serif;
 }
@@ -400,6 +400,15 @@ input:focus, select:focus, textarea:focus {
   color: var(--color-danger);
   border: 1px solid rgba(255, 95, 86, 0.3);
   animation: pulse 2s infinite;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.badge-conflict:hover {
+  background-color: rgba(255, 95, 86, 0.25);
+  border-color: rgba(255, 95, 86, 0.5);
+  transform: translateY(-0.5px) scale(1.05);
+  box-shadow: 0 0 8px rgba(255, 95, 86, 0.3);
 }
 
 @keyframes pulse {
@@ -565,7 +574,7 @@ input:focus, select:focus, textarea:focus {
 
 .slot-btn:hover {
   border-color: var(--color-accent);
-  background-color: rgba(77, 144, 254, 0.08);
+  background-color: rgba(34, 197, 94, 0.08);
 }
 
 .slot-btn-time {

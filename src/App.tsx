@@ -6,13 +6,35 @@ import { ConflictModal } from './components/ConflictModal';
 import { SuggestionModal } from './components/SuggestionModal';
 import { ExportModal } from './components/ExportModal';
 import { PrintLayout } from './components/PrintLayout';
-import { suggestAvailableSlots, timeToMinutes } from './utils/timeUtils';
+import { suggestAvailableSlots, timeToMinutes, minutesToTime } from './utils/timeUtils';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { CalendarRange } from 'lucide-react';
+import { LandingPage } from './components/LandingPage';
 
 export default function App() {
+  // Simple hash-based router state
+  const [view, setView] = useState<'landing' | 'app'>(() => {
+    return window.location.hash === '#app' ? 'app' : 'landing';
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setView(window.location.hash === '#app' ? 'app' : 'landing');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleStartApp = () => {
+    window.location.hash = '#app';
+  };
+
+  const handleGoHome = () => {
+    window.location.hash = '';
+  };
+
   // Central schedules state loaded from Local Storage
   const [schedules, setSchedules] = useState<ScheduleItem[]>(() => {
     const saved = localStorage.getItem('arts_festival_schedules');
@@ -32,6 +54,17 @@ export default function App() {
   const [venue, setVenue] = useState(() => localStorage.getItem('arts_festival_venue') || 'MAIN ARENA');
   const [date, setDate] = useState(() => localStorage.getItem('arts_festival_date') || new Date().toISOString().split('T')[0]);
 
+  // Dynamic Custom Categories and Stages Lists States
+  const [categories, setCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem('arts_festival_categories');
+    return saved ? JSON.parse(saved) : ['Lower Primary', 'Upper Primary', 'High School', 'Junior', 'Higher Secondary', 'Senior', 'Campus'];
+  });
+
+  const [stages, setStages] = useState<string[]>(() => {
+    const saved = localStorage.getItem('arts_festival_stages');
+    return saved ? JSON.parse(saved) : ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4', 'Stage 5'];
+  });
+
   // Sync Event Details to local storage
   useEffect(() => {
     localStorage.setItem('arts_festival_event_name', eventName);
@@ -45,6 +78,14 @@ export default function App() {
     localStorage.setItem('arts_festival_date', date);
   }, [date]);
 
+  useEffect(() => {
+    localStorage.setItem('arts_festival_categories', JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem('arts_festival_stages', JSON.stringify(stages));
+  }, [stages]);
+
   // Split-pane resizing states
   const [leftPaneWidth, setLeftPaneWidth] = useState(380);
   const [isDragging, setIsDragging] = useState(false);
@@ -55,6 +96,8 @@ export default function App() {
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [pendingItem, setPendingItem] = useState<Omit<ScheduleItem, 'id'> | ScheduleItem | null>(null);
   const [activeConflict, setActiveConflict] = useState<TimeConflict | null>(null);
+  const [isConflictReadOnly, setIsConflictReadOnly] = useState(false);
+  const [conflictSuggestions, setConflictSuggestions] = useState<string[]>([]);
 
   // Suggest time assistant modal states
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
@@ -118,6 +161,9 @@ export default function App() {
     if (conflict) {
       setPendingItem(item);
       setActiveConflict(conflict);
+      setIsConflictReadOnly(false);
+      const suggestions = suggestAvailableSlots(item.day, item.category, item.duration, item.stage, schedules);
+      setConflictSuggestions(suggestions);
       setIsConflictModalOpen(true);
     } else {
       const newItem: ScheduleItem = {
@@ -134,6 +180,9 @@ export default function App() {
     if (conflict) {
       setPendingItem(item);
       setActiveConflict(conflict);
+      setIsConflictReadOnly(false);
+      const suggestions = suggestAvailableSlots(item.day, item.category, item.duration, item.stage, schedules.filter(s => s.id !== item.id));
+      setConflictSuggestions(suggestions);
       setIsConflictModalOpen(true);
     } else {
       setSchedules((prev) => prev.map((s) => (s.id === item.id ? item : s)));
@@ -166,12 +215,54 @@ export default function App() {
     // Reset states
     setPendingItem(null);
     setActiveConflict(null);
+    setConflictSuggestions([]);
     setIsConflictModalOpen(false);
   };
 
   const handleCancelConflict = () => {
     setPendingItem(null);
     setActiveConflict(null);
+    setConflictSuggestions([]);
+    setIsConflictModalOpen(false);
+  };
+
+  const handleSelectConflictSuggestion = (newTime: string) => {
+    const startMins = timeToMinutes(newTime);
+    const repMins = Math.max(0, startMins - 30);
+    const newRepTime = minutesToTime(repMins);
+
+    if (isConflictReadOnly && activeConflict) {
+      const incomingItem = activeConflict.incoming as ScheduleItem;
+      const updatedItem: ScheduleItem = {
+        ...incomingItem,
+        startingTime: newTime,
+        reportingTime: newRepTime,
+        isConflict: false,
+      };
+      setSchedules((prev) => prev.map((s) => (s.id === incomingItem.id ? updatedItem : s)));
+    } else if (pendingItem) {
+      const updatedItem = {
+        ...pendingItem,
+        startingTime: newTime,
+        reportingTime: newRepTime,
+        isConflict: false,
+      };
+
+      if ('id' in updatedItem) {
+        setSchedules((prev) => prev.map((s) => (s.id === updatedItem.id ? updatedItem : s)));
+        setEditItem(null);
+      } else {
+        const newItem: ScheduleItem = {
+          ...updatedItem,
+          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
+        };
+        setSchedules((prev) => [...prev, newItem]);
+      }
+    }
+
+    setPendingItem(null);
+    setActiveConflict(null);
+    setConflictSuggestions([]);
     setIsConflictModalOpen(false);
   };
 
@@ -199,6 +290,9 @@ export default function App() {
     if (conflict) {
       setPendingItem(duplicatedItem);
       setActiveConflict(conflict);
+      setIsConflictReadOnly(false);
+      const suggestions = suggestAvailableSlots(duplicatedItem.day, duplicatedItem.category, duplicatedItem.duration, duplicatedItem.stage, schedules);
+      setConflictSuggestions(suggestions);
       setIsConflictModalOpen(true);
     } else {
       setSchedules((prev) => [...prev, duplicatedItem]);
@@ -213,12 +307,30 @@ export default function App() {
     }
   };
 
+  // Handler to display existing conflict details
+  const handleShowConflictDetails = (item: ScheduleItem) => {
+    const conflict = detectConflict(item, schedules, item.id);
+    if (conflict) {
+      setActiveConflict(conflict);
+      setIsConflictReadOnly(true);
+      const suggestions = suggestAvailableSlots(item.day, item.category, item.duration, item.stage, schedules.filter(s => s.id !== item.id));
+      setConflictSuggestions(suggestions);
+      setIsConflictModalOpen(true);
+    } else {
+      // Self-heal: clear the conflict flag since the overlap is gone
+      setSchedules((prev) => prev.map((s) => (s.id === item.id ? { ...s, isConflict: false } : s)));
+      alert("This item is no longer overlapping with any other schedule. Its conflict status has been updated to normal.");
+    }
+  };
+
   // Reset all schedules and event settings data
   const handleResetData = () => {
     setSchedules([]);
     setEventName('ARTS FESTIVAL');
     setVenue('MAIN ARENA');
     setDate(new Date().toISOString().split('T')[0]);
+    setCategories(['Lower Primary', 'Upper Primary', 'High School', 'Junior', 'Higher Secondary', 'Senior', 'Campus']);
+    setStages(['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4', 'Stage 5']);
   };
 
   // Excel bulk import handler
@@ -425,6 +537,10 @@ export default function App() {
     }, 180);
   };
 
+  if (view === 'landing') {
+    return <LandingPage onStartApp={handleStartApp} />;
+  }
+
   return (
     <div className="app-container">
       {/* Blocker during resizing drag */}
@@ -432,8 +548,13 @@ export default function App() {
 
       {/* Top logo bar */}
       <header className="top-nav">
-        <div className="top-nav-logo">
-          <CalendarRange size={16} style={{ color: '#4D90FE' }} />
+        <div 
+          className="top-nav-logo" 
+          style={{ cursor: 'pointer' }}
+          onClick={handleGoHome}
+          title="Back to Landing Page"
+        >
+          <CalendarRange size={16} style={{ color: '#22C55E' }} />
           <span>Schedule Builder</span>
         </div>
         <div className="top-nav-actions" style={{ fontSize: '11px', color: '#B3B3B3', display: 'flex', gap: '12px' }}>
@@ -459,11 +580,17 @@ export default function App() {
             startingTimeOverride={overrideStartingTime}
             onResetOverride={() => setOverrideStartingTime(null)}
             eventName={eventName}
-            onChangeEventName={setEventName}
             venue={venue}
-            onChangeVenue={setVenue}
             date={date}
-            onChangeDate={setDate}
+            categories={categories}
+            stages={stages}
+            onUpdateSettings={(name, v, d, cats, stgs) => {
+              setEventName(name);
+              setVenue(v);
+              setDate(d);
+              setCategories(cats);
+              setStages(stgs);
+            }}
             onResetData={handleResetData}
           />
         </div>
@@ -482,6 +609,7 @@ export default function App() {
             onDelete={handleDelete}
             onImportSchedules={handleImportSchedules}
             onOpenExportModal={handleOpenExportModal}
+            onShowConflictDetails={handleShowConflictDetails}
           />
         </div>
       </main>
@@ -492,6 +620,9 @@ export default function App() {
         conflict={activeConflict}
         onProceed={handleProceedConflict}
         onCancel={handleCancelConflict}
+        isReadOnly={isConflictReadOnly}
+        suggestions={conflictSuggestions}
+        onSelectSuggestion={handleSelectConflictSuggestion}
       />
 
       {/* Suggestion Slots Dialog Modal */}

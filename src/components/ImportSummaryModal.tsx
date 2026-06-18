@@ -41,13 +41,13 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
 
         <div className="modal-body" style={{ maxHeight: '60vh' }}>
           <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
-            <div style={{ flex: 1, backgroundColor: '#1E1E1E', padding: '10px', borderRadius: '4px', border: '1px solid #3C3C3C', textAlign: 'center' }}>
+            <div style={{ flex: 1, backgroundColor: '#121212', padding: '10px', borderRadius: '4px', border: '1px solid #27272A', textAlign: 'center' }}>
               <span style={{ fontSize: '10px', color: '#B3B3B3', textTransform: 'uppercase' }}>Schedules Detected</span>
               <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#FFF', marginTop: '4px' }}>{totalSchedules}</div>
             </div>
-            <div style={{ flex: 1, backgroundColor: '#1E1E1E', padding: '10px', borderRadius: '4px', border: '1px solid #3C3C3C', textAlign: 'center' }}>
+            <div style={{ flex: 1, backgroundColor: '#121212', padding: '10px', borderRadius: '4px', border: '1px solid #27272A', textAlign: 'center' }}>
               <span style={{ fontSize: '10px', color: '#B3B3B3', textTransform: 'uppercase' }}>Conflicts Found</span>
-              <div style={{ fontSize: '20px', fontWeight: 'bold', color: totalConflicts > 0 ? '#FF5F56' : '#4CAF50', marginTop: '4px' }}>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: totalConflicts > 0 ? '#EF4444' : '#22C55E', marginTop: '4px' }}>
                 {totalConflicts}
               </div>
             </div>
@@ -59,10 +59,10 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                 The following rows have conflicts. If you select <strong>Import All</strong>, they will be imported and flagged in the schedule table.
               </p>
 
-              <div style={{ border: '1px solid #3C3C3C', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#1E1E1E' }}>
+              <div style={{ border: '1px solid #27272A', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#121212' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#252526', borderBottom: '1px solid #3C3C3C', color: '#B3B3B3', textAlign: 'left' }}>
+                    <tr style={{ backgroundColor: '#1E1E1E', borderBottom: '1px solid #27272A', color: '#B3B3B3', textAlign: 'left' }}>
                       <th style={{ padding: '6px 8px' }}>Day</th>
                       <th style={{ padding: '6px 8px' }}>Program</th>
                       <th style={{ padding: '6px 8px' }}>Stage</th>
@@ -72,13 +72,13 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                   </thead>
                   <tbody>
                     {summary.conflictingItems.map((item, idx) => (
-                      <tr key={idx} style={{ borderBottom: idx < summary.conflictingItems.length - 1 ? '1px solid #3C3C3C' : 'none' }}>
+                      <tr key={idx} style={{ borderBottom: idx < summary.conflictingItems.length - 1 ? '1px solid #27272A' : 'none' }}>
                         <td style={{ padding: '6px 8px', color: '#B3B3B3' }}>{item.day}</td>
                         <td style={{ padding: '6px 8px', color: '#FFF', fontWeight: 500 }}>{item.programName}</td>
                         <td style={{ padding: '6px 8px' }}>{item.stage}</td>
-                        <td style={{ padding: '6px 8px', color: '#4D90FE' }}>{item.startingTime}</td>
+                        <td style={{ padding: '6px 8px', color: '#22C55E' }}>{item.startingTime}</td>
                         <td style={{ padding: '6px 8px' }}>
-                          <span style={{ color: '#FF5F56', fontWeight: 600 }}>
+                          <span style={{ color: '#EF4444', fontWeight: 600 }}>
                             {item.conflictTypes.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(' & ')}
                           </span>
                         </td>

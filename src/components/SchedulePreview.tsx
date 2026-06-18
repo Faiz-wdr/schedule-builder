@@ -15,6 +15,7 @@ interface SchedulePreviewProps {
   onDelete: (id: string) => void;
   onImportSchedules: (items: Omit<ScheduleItem, 'id'>[], overwriteConflicts?: boolean) => void;
   onOpenExportModal: (activeOrder: 'time' | 'stage' | 'category') => void;
+  onShowConflictDetails: (item: ScheduleItem) => void;
 }
 
 const getCategoryStyle = (category: string) => {
@@ -29,7 +30,7 @@ const getCategoryStyle = (category: string) => {
     case 'junior':
       return { color: '#4CAF50', backgroundColor: 'rgba(76, 175, 80, 0.12)', border: '1px solid rgba(76, 175, 80, 0.25)' };
     case 'higher secondary':
-      return { color: '#4D90FE', backgroundColor: 'rgba(77, 144, 254, 0.12)', border: '1px solid rgba(77, 144, 254, 0.25)' };
+      return { color: '#22C55E', backgroundColor: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.25)' };
     case 'senior':
       return { color: '#BB86FC', backgroundColor: 'rgba(187, 134, 252, 0.12)', border: '1px solid rgba(187, 134, 252, 0.25)' };
     case 'campus':
@@ -46,6 +47,7 @@ export const SchedulePreview: React.FC<SchedulePreviewProps> = ({
   onDelete,
   onImportSchedules,
   onOpenExportModal,
+  onShowConflictDetails,
 }) => {
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -478,7 +480,12 @@ export const SchedulePreview: React.FC<SchedulePreviewProps> = ({
                   <td>{item.stage}</td>
                   <td style={{ textAlign: 'center' }}>
                     {item.isConflict ? (
-                      <span className="badge badge-conflict" title="Conflict identified during operation.">
+                      <span
+                        className="badge badge-conflict"
+                        title="Conflict identified during operation. Click to view details."
+                        onClick={() => onShowConflictDetails(item)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         Conflict
                       </span>
                     ) : (

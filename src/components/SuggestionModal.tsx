@@ -28,7 +28,7 @@ export const SuggestionModal: React.FC<SuggestionModalProps> = ({
     <div className="modal-overlay">
       <div className="modal-content" style={{ width: '400px' }}>
         <div className="modal-header">
-          <div className="top-nav-logo" style={{ color: '#4D90FE', gap: '8px' }}>
+          <div className="top-nav-logo" style={{ color: '#22C55E', gap: '8px' }}>
             <Clock size={16} />
             <span style={{ fontSize: '14px', fontWeight: 600, color: '#FFF', background: 'none', WebkitTextFillColor: 'initial' }}>
               Available Slots
